@@ -393,47 +393,38 @@ const handleSidebarClick = (feature) => {
 }
 
 const handleSend = async () => {
-  if (!title.value.trim()) {
-    error.value = "请填写标题"
-    return
-  }
-  if (!content.value.trim()) {
-    error.value = "请生成文章内容"
-    return
-  }
-  if (!selectedCompany.value) {
-    error.value = "请选择公司"
-    return
-  }
-  if (!selectedDepartment.value) {
-    error.value = "请选择部门"
-    return
-  }
-  if (!selectedPerson.value) {
-    error.value = "请选择人员"
-    return
-  }
-
   try {
+    if (!selectedPerson.value) {
+      error.value = "请选择人员"
+      return
+    }
+
     loading.value = true
     const selectedPersonObj = personnel.find(p => p.value === selectedPerson.value)
+    console.log('Selected person:', selectedPersonObj) // 调试日志
 
-    const response = await axios.post(`${API_BASE_URL}/send-email`, {
-      to_email: selectedPersonObj.value,
-      subject: title.value,
-      content: content.value,
-      sender_name: "AI管理员",
-      receiver_name: selectedPersonObj.label
-    })
+    const requestData = {
+      toEmail: selectedPerson.value,  // 改为驼峰命名
+      subject: title.value.trim(),
+      content: content.value.trim(),
+      senderName: "AI管理员",        // 改为驼峰命名
+      receiverName: selectedPersonObj?.label || "用户"  // 改为驼峰命名
+    }
+    console.log('Request data:', requestData) // 调试日志
+
+    const response = await axios.post(`${API_BASE_URL}/send-email`, requestData)
 
     if (response.data.message === "邮件发送成功") {
+      ElMessage.success("邮件发送成功!")
       error.value = ""
-      ElMessage.success("邮件发送成功!")  // 使用Element Plus的消息提示
     }
   } catch (err) {
-    error.value = err.response?.data?.detail || "邮件发送失败"
+    console.error('发送邮件错误:', err)
+    error.value = err.response?.data?.message || err.message || "邮件发送失败"
+    ElMessage.error(error.value)
   } finally {
     loading.value = false
   }
 }
+
 </script>

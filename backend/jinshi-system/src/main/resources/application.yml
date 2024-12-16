@@ -1,0 +1,18 @@
+# application.yml
+spring:
+  mail:
+    host: smtp.163.com
+    username: zhouquanxi01@163.com
+    password: NYmTqBrLMM4qUpJ9
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+logging:
+  level:
+    com.jinshi: DEBUG
+    org.springframework.mail: DEBUG
+    javax.mail: DEBUG
