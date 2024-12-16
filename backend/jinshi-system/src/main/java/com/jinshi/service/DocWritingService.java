@@ -1,3 +1,5 @@
+// jinshi-java/backend/jinshi-system/src/main/java/com/jinshi/service/DocWritingService.java
+
 package com.jinshi.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +35,7 @@ public class DocWritingService {
                 requestBody.put("messages", new JSONObject[]{
                         new JSONObject().put("role", "user").put("content", prompt)
                 });
-                requestBody.put("temperature", 0.95);
+                requestBody.put("temperature", 0.7);
                 requestBody.put("top_p", 0.8);
                 requestBody.put("stream", true);  // 启用流式返回
 
@@ -51,6 +53,8 @@ public class DocWritingService {
 
                     // 读取流式响应
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                        StringBuilder fullContent = new StringBuilder();
+
                         String line;
                         while ((line = reader.readLine()) != null) {
                             if (line.startsWith("data: ")) {
@@ -60,11 +64,17 @@ public class DocWritingService {
                                 if (chunk.has("result")) {
                                     String content = chunk.getString("result");
                                     if (!content.isEmpty()) {
-                                        StreamResponse streamResponse = new StreamResponse(content);
+                                        fullContent.append(content);
+
+                                        // 每个响应包装成一个带有完整内容的对象
+                                        StreamResponse streamResponse = new StreamResponse(fullContent.toString());
                                         String jsonResponse = objectMapper.writeValueAsString(streamResponse);
+
+                                        // 发送响应并添加延迟
                                         emitter.send("data: " + jsonResponse + "\n\n");
                                     }
                                 }
+
                             }
                         }
                     }
@@ -101,11 +111,10 @@ public class DocWritingService {
         return String.format("请根据以下要求生成一份工作会议讲话稿:\n" +
                         "%s\n" +
                         "要求:\n" +
-                        "1. 语言严谨规范,符合讲话稿风格\n" +
+                        "1. 直接输出稿件正文,不需要再重复讲话稿的标题\n" +
                         "2. 结构清晰,层次分明\n" +
                         "3. 内容积极向上,富有激励性\n" +
-                        "4. 直接输出稿件正文,不需要输出大标题",
+                        "4. 语言严谨规范,符合讲话稿风格",
                 requirements);
     }
-
 }

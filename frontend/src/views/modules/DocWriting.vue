@@ -224,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue' // 移除未使用的 onMounted
+import { ref, nextTick } from 'vue' // 确保这行在最上方
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { Send, ArrowDown } from 'lucide-vue-next'
@@ -320,6 +320,7 @@ const handleDocTypeClick = (type) => {
   }
 }
 
+// handleGenerateDoc 完整函数
 const handleGenerateDoc = async () => {
   if (!title.value.trim()) {
     error.value = '请先输入标题才能为您自动撰写稿件'
@@ -328,7 +329,7 @@ const handleGenerateDoc = async () => {
 
   try {
     loading.value = true
-    content.value = ''
+    content.value = ''  // 清空现有内容
     error.value = ''
 
     const response = await fetch(`${API_BASE_URL}/generate-doc`, {
@@ -343,8 +344,8 @@ const handleGenerateDoc = async () => {
 
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
-    let reading = true
 
+    let reading = true
     while (reading) {
       const { value, done } = await reader.read()
       if (done) {
@@ -358,15 +359,19 @@ const handleGenerateDoc = async () => {
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           try {
-            const data = JSON.parse(line.slice(5))
+            const data = JSON.parse(line.slice(6))
             if (data.content) {
-              const formattedContent = data.content.replace(/\\n/g, '\n')
-              content.value += formattedContent
-            } else if (data.error) {
-              error.value = data.error
+              await nextTick(() => {
+                content.value = data.content  // data.content 就是后端的 fullContent.toString()
+                // 获取textarea元素并滚动到底部
+                if (textareaRef.value) {
+                  const textarea = textareaRef.value.textarea;
+                  textarea.scrollTop = textarea.scrollHeight;
+                }
+              })
             }
           } catch (e) {
-            continue
+            console.error('Error parsing JSON:', e)
           }
         }
       }
