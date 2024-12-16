@@ -1,0 +1,20 @@
+package com.jinshi.dto;
+
+public class StreamResponse {
+    private String content;
+
+    public StreamResponse() {
+    }
+
+    public StreamResponse(String content) {
+        this.content = content;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+}
