@@ -1,3 +1,5 @@
+// src/main/java/com/jinshi/controller/StreamResponse.java
+
 package com.jinshi.dto;
 
 public class StreamResponse {

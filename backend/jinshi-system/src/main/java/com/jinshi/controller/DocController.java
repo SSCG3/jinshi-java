@@ -1,3 +1,4 @@
+// src/main/java/com/jinshi/controller/DocController.java
 package com.jinshi.controller;
 
 import com.jinshi.dto.DocGenerateRequest;

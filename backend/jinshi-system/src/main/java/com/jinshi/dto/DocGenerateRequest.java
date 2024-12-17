@@ -1,3 +1,5 @@
+// src/main/java/com/jinshi/controller/DocGenerateRequest.java
+
 package com.jinshi.dto;
 
 import java.util.List;

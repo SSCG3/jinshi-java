@@ -117,6 +117,8 @@ const chatHistory = ref([])
 const isLoading = ref(false)
 const chatContainerRef = ref(null)
 
+const API_BASE_URL = `http://10.129.53.200:3030/api`
+
 const modules = [
   { id: 'docs', name: '智慧文稿写作', icon: FileText, desc: '点击进入智慧文稿写作模块...', path: '/doc-writing' },
   { id: 'decisions', name: '智慧决策信息', icon: MessageCircle, desc: '点击进入智慧决策信息模块...', path: '/decision-info' },
@@ -154,7 +156,7 @@ const handleSubmit = async () => {
   await scrollToBottom()
 
   try {
-    const response = await fetch(`/api/rag/chat`, {
+    const response = await fetch(`${API_BASE_URL}/rag/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: userQuery })
