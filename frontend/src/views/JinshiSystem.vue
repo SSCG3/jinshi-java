@@ -1,4 +1,5 @@
 # src/views/JinshiSystem.vue
+
 <template>
   <div class="h-screen bg-gray-100 flex flex-col">
     <!-- Header -->
@@ -28,8 +29,8 @@
       <!-- Module Cards Grid -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
         <div v-for="module in modules" :key="module.id"
-          @click="handleModuleClick(module.path)"
-          class="p-3 bg-white border rounded-lg hover:shadow-md cursor-pointer transition-shadow">
+             @click="handleModuleClick(module.path)"
+             class="p-3 bg-white border rounded-lg hover:shadow-md cursor-pointer transition-shadow">
           <div class="flex items-center space-x-2">
             <div class="p-1.5 bg-red-50 rounded-lg">
               <component :is="module.icon" class="w-4 h-4" />
@@ -57,14 +58,14 @@
           </template>
           <template v-else>
             <div v-for="(message, index) in chatHistory" :key="index"
-              :class="['flex', message.role === 'user' ? 'justify-end' : 'justify-start']">
+                 :class="['flex', message.role === 'user' ? 'justify-end' : 'justify-start']">
               <div :class="['max-w-[80%] rounded-lg p-2',
                 message.role === 'user' ? 'bg-red-50 text-gray-800' : 'bg-gray-100 text-gray-800']">
                 <p class="text-sm whitespace-pre-wrap">{{ message.content }}</p>
               </div>
             </div>
           </template>
-          <div v-if="isLoading" class="flex justify-start">
+          <div v-if="isLoading && !hasReceivedFirstResponse" class="flex justify-start">
             <div class="bg-gray-100 text-gray-500 rounded-lg p-2 text-sm">
               正在思考...
             </div>
@@ -75,16 +76,17 @@
         <div class="border-t p-3">
           <form @submit.prevent="handleSubmit" class="flex space-x-2">
             <input
-              v-model="query"
-              type="text"
-              placeholder="请输入您的问题..."
-              class="flex-1 p-1.5 text-sm border rounded-lg focus:outline-none focus:border-red-600"
-              :disabled="isLoading"
+                v-model="query"
+                type="text"
+                placeholder="请输入您的问题..."
+                class="flex-1 p-1.5 text-sm border rounded-lg focus:outline-none focus:border-red-600"
+                :disabled="isLoading"
             />
             <el-button
-              type="primary"
-              :disabled="isLoading"
-              class="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                type="primary"
+                native-type="submit"
+                :disabled="isLoading"
+                class="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <Send class="w-4 h-4" />
             </el-button>
@@ -114,7 +116,6 @@ import {
 const router = useRouter()
 const query = ref('')
 const chatHistory = ref([])
-const isLoading = ref(false)
 const chatContainerRef = ref(null)
 
 const API_BASE_URL = `http://10.129.53.200:3030/api`
@@ -144,12 +145,17 @@ const scrollToBottom = async () => {
   }
 }
 
+// ... 其他状态变量保持不变 ...
+const isLoading = ref(false)
+const hasReceivedFirstResponse = ref(false)
+
 const handleSubmit = async () => {
   if (!query.value.trim() || isLoading.value) return
 
   const userQuery = query.value.trim()
   query.value = ''
   isLoading.value = true
+  hasReceivedFirstResponse.value = false
 
   // Add user message immediately
   chatHistory.value.push({ role: 'user', content: userQuery })
@@ -170,7 +176,6 @@ const handleSubmit = async () => {
     const decoder = new TextDecoder()
 
     let assistantResponse = ''
-    // 修改 while 循环的实现方式
     let reading = true
     while (reading) {
       const { value, done } = await reader.read()
@@ -187,6 +192,11 @@ const handleSubmit = async () => {
           try {
             const data = JSON.parse(line.slice(6))
             if (data.content) {
+              // 设置已收到首次响应
+              if (!hasReceivedFirstResponse.value) {
+                hasReceivedFirstResponse.value = true
+              }
+
               assistantResponse = data.content
               const lastMessage = chatHistory.value[chatHistory.value.length - 1]
               if (lastMessage && lastMessage.role === 'assistant') {
@@ -210,6 +220,7 @@ const handleSubmit = async () => {
     })
   } finally {
     isLoading.value = false
+    hasReceivedFirstResponse.value = false
     await scrollToBottom()
   }
 }
