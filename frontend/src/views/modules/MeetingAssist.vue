@@ -326,7 +326,6 @@ import {
 const router = useRouter()
 const fileInputRef = ref(null)
 const contentRef = ref(null)
-const textareaRef = ref(null)
 
 // 状态
 const selectedPhase = ref('before')
@@ -547,6 +546,24 @@ const generateMinutes = async () => {
     let fullContent = ''
     let reading = true
 
+    const updateContentAndScroll = async (content) => {
+      const titleMatch = content.match(/\*\*会议主题\*\*：\s*(.+?)(?=\s*\*\*)/)
+      if (titleMatch) {
+        const title = titleMatch[1].trim()
+        minutesTitle.value = title
+        const contentWithoutTitle = content.replace(/\*\*会议主题\*\*：[^\n]*\n/, '').trim()
+        minutes.value = contentWithoutTitle
+      } else {
+        minutes.value = content
+      }
+
+      await nextTick()
+      const textarea = document.querySelector('.el-textarea__inner')
+      if (textarea) {
+        textarea.scrollTop = textarea.scrollHeight
+      }
+    }
+
     while (reading) {
       const { value, done } = await reader.read()
       if (done) {
@@ -564,20 +581,7 @@ const generateMinutes = async () => {
             if (data.content) {
               const formattedContent = data.content.replace(/\\n/g, '\n')
               fullContent += formattedContent
-
-              const titleMatch = fullContent.match(/\*\*会议主题\*\*：\s*(.+?)(?=\s*\*\*)/)
-              if (titleMatch) {
-                const title = titleMatch[1].trim()
-                minutesTitle.value = title
-
-                const contentWithoutTitle = fullContent.replace(/\*\*会议主题\*\*：[^\n]*\n/, '').trim()
-                minutes.value = contentWithoutTitle
-              }
-
-              await nextTick()
-              if (textareaRef.value) {
-                textareaRef.value.scrollTop = textareaRef.value.scrollHeight
-              }
+              await updateContentAndScroll(fullContent)
             } else if (data.error) {
               error.value = data.error
             }
@@ -594,29 +598,25 @@ const generateMinutes = async () => {
 
 const handleSend = async () => {
   if (!minutesTitle.value.trim()) {
-    error.value = "请填写标题"
-    return
-  }
-  if (!minutes.value.trim()) {
-    error.value = "会议纪要还没有生成，无法发送邮件"
-    return
-  }
-  if (!selectedCompany.value) {
-    error.value = "请选择公司"
-    return
-  }
-  if (!selectedDepartment.value) {
-    error.value = "请选择部门"
-    return
-  }
-  if (!selectedPerson.value) {
-    error.value = "请选择人员"
-    return
+    ElMessage.error("请填写标题");
+    error.value = "请填写标题";
+    return;
   }
 
   try {
-    loading.value = true
-    const selectedPersonObj = personnel.find(p => p.value === selectedPerson.value)
+    loading.value = true;
+    const selectedPersonObj = personnel.find(p => p.value === selectedPerson.value);
+
+    console.log('Sending request to:', `${API_BASE_URL}/send-email`);
+
+    // 打印请求数据
+    console.log('Request payload:', {
+      to_email: selectedPersonObj.value,
+      subject: minutesTitle.value,
+      content: minutes.value,
+      sender_name: "AI管理员",
+      receiver_name: selectedPersonObj.label
+    });
 
     const response = await axios.post(`${API_BASE_URL}/send-email`, {
       to_email: selectedPersonObj.value,
@@ -624,18 +624,24 @@ const handleSend = async () => {
       content: minutes.value,
       sender_name: "AI管理员",
       receiver_name: selectedPersonObj.label
-    })
+    });
+
+    console.log('Full Response:', response);
 
     if (response.data.message === "邮件发送成功") {
-      error.value = ""
-      ElMessage.success("邮件发送成功!")
+      error.value = "";
+      ElMessage.success("邮件发送成功!");
+    } else {
+      throw new Error("未收到成功响应");
     }
   } catch (err) {
-    error.value = err.response?.data?.detail || "邮件发送失败"
+    console.error('Error details:', err);
+    error.value = err.response?.data?.detail || "邮件发送失败";
+    ElMessage.error(error.value);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const scrollToBottom = async () => {
   await nextTick()
