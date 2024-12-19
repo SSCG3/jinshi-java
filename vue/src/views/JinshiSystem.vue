@@ -118,7 +118,7 @@ const query = ref('')
 const chatHistory = ref([])
 const chatContainerRef = ref(null)
 
-const API_BASE_URL = `http://10.129.53.200:3030/api`
+const API_BASE_URL = `http://${window.location.hostname}:3030/api`
 
 const modules = [
   { id: 'docs', name: '智慧文稿写作', icon: FileText, desc: '点击进入智慧文稿写作模块...', path: '/doc-writing' },
